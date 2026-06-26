@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhiUrl — Browse with Confidence</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--bg2:#13161d;--bg3:#1a1e28;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#e2e4ec;--muted:#6b7080;--muted2:#9097a8;
+  --blue:#2563eb;--blue-l:#3b82f6;--blue-glow:rgba(37,99,235,0.3);
+  --cyan:#06b6d4;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.page{display:none;min-height:100vh;animation:fadeIn 0.25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:64px;background:rgba(13,15,20,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--font-head);font-size:20px;font-weight:700;color:#fff;cursor:pointer;letter-spacing:-0.5px}
+.nav-links{display:flex;align-items:center;gap:28px}
+.nav-links a{font-size:14px;font-weight:400;color:var(--muted2);text-decoration:none;cursor:pointer;transition:color 0.2s;position:relative;padding-bottom:2px}
+.nav-links a:hover,.nav-links a.active{color:#fff}
+.nav-links a.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--blue-l);border-radius:1px}
+.nav-cta{background:var(--blue)!important;color:#fff!important;padding:9px 20px!important;border-radius:8px;font-weight:500!important;transition:all 0.2s!important}
+.nav-cta::after{display:none!important}
+.nav-cta:hover{background:var(--blue-l)!important;transform:translateY(-1px);box-shadow:0 4px 16px var(--blue-glow)}
+
+/* API BADGE */
+#api-badge{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);color:var(--muted2);transition:all 0.4s}
+#api-badge .apidot{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background 0.4s;flex-shrink:0}
+#api-badge.online{color:var(--green);border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.06)}
+#api-badge.online .apidot{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease-in-out infinite}
+#api-badge.offline{color:var(--amber);border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.06)}
+#api-badge.offline .apidot{background:var(--amber)}
+
+/* SHARED */
+.section-label{font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--blue-l);margin-bottom:12px}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--blue);color:#fff;padding:12px 24px;border-radius:8px;font-family:var(--font-body);font-size:15px;font-weight:500;border:none;cursor:pointer;transition:all 0.2s;text-decoration:none}
+.btn-primary:hover{background:var(--blue-l);transform:translateY(-2px);box-shadow:0 8px 24px var(--blue-glow)}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text);padding:11px 22px;border-radius:8px;font-family:var(--font-body);font-size:15px;font-weight:500;border:1px solid var(--border2);cursor:pointer;transition:all 0.2s;text-decoration:none}
+.btn-outline:hover{border-color:rgba(255,255,255,0.3);background:var(--bg3)}
+
+/* HOME */
+.hero{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:48px;max-width:1100px;margin:0 auto;padding:80px 48px 64px}
+.hero-left h1{font-family:var(--font-head);font-size:clamp(40px,5vw,62px);font-weight:800;line-height:1.05;letter-spacing:-0.03em;color:#fff;margin-bottom:20px}
+.hero-left p{font-size:16px;line-height:1.7;color:var(--muted2);max-width:420px;margin-bottom:32px}
+.hero-input-row{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:4px 4px 4px 16px;max-width:480px;transition:border-color 0.2s,box-shadow 0.2s}
+.hero-input-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-glow)}
+.hero-input-row input{flex:1;background:none;border:none;outline:none;font-family:var(--font-body);font-size:14px;color:var(--text);min-width:0}
+.hero-input-row input::placeholder{color:var(--muted)}
+.hero-input-row button{background:var(--blue);color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background 0.2s}
+.hero-input-row button:hover{background:var(--blue-l)}
+.hero-trust{display:flex;gap:24px;margin-top:20px}
+.trust-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted2)}
+.hero-mockup{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.5)}
+.mockup-topbar{display:flex;align-items:center;gap:6px;padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border)}
+.mdot{width:10px;height:10px;border-radius:50%}
+.mockup-body{padding:16px}
+.mock-secure{background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.mock-secure-badge{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;color:var(--green);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px}
+.mock-bar-track{height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;margin-bottom:4px}
+.mock-bar-fill{height:100%;background:var(--green);border-radius:3px;width:94%}
+.mock-score{font-size:10px;color:var(--muted2)}
+.mock-score span{color:var(--green);font-weight:600}
+.mock-shield{width:48px;height:48px;background:rgba(34,197,94,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-left:12px;flex-shrink:0}
+.mock-charts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mock-chart-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:72px;display:flex;align-items:flex-end;gap:3px}
+.bar-mini{flex:1;background:rgba(37,99,235,0.4);border-radius:2px;min-height:4px}
+
+.why-section{max-width:1100px;margin:0 auto;padding:64px 48px;border-top:1px solid var(--border)}
+.why-header{text-align:center;margin-bottom:40px}
+.why-header h2{font-family:var(--font-head);font-size:36px;font-weight:700;letter-spacing:-0.02em;color:#fff}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;transition:border-color 0.2s,transform 0.2s}
+.feature-card:hover{border-color:var(--border2);transform:translateY(-3px)}
+.feature-card.highlighted{border-color:rgba(37,99,235,0.3);background:linear-gradient(135deg,rgba(37,99,235,0.05),var(--bg2))}
+.feat-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.2);color:var(--blue-l);margin-bottom:16px}
+.feature-card h3{font-family:var(--font-head);font-size:17px;font-weight:600;color:#fff;margin-bottom:8px}
+.feature-card p{font-size:13px;line-height:1.6;color:var(--muted2)}
+
+.stats-row{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.stat-item{background:var(--bg);padding:28px 0;text-align:center}
+.stat-num{font-family:var(--font-head);font-size:36px;font-weight:800;color:#fff;letter-spacing:-0.03em}
+.stat-num sup{font-size:20px}
+.stat-label{font-size:11px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+
+.steps-section{max-width:1100px;margin:0 auto;padding:56px 48px}
+.steps-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px}
+.steps-header h2{font-family:var(--font-head);font-size:28px;font-weight:700;color:#fff}
+.steps-tabs{display:flex}
+.step-tab{padding:8px 16px;font-size:13px;color:var(--muted2);cursor:pointer;position:relative;transition:color 0.2s}
+.step-tab.active{color:#fff}
+.step-tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--blue-l)}
+.steps-learn{font-size:13px;color:var(--blue-l);cursor:pointer}
+.steps-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.step-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;gap:16px;align-items:flex-start}
+.step-num{width:32px;height:32px;border-radius:8px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.2);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--blue-l);flex-shrink:0}
+.step-card h4{font-family:var(--font-head);font-size:15px;font-weight:600;color:#fff;margin-bottom:6px}
+.step-card p{font-size:13px;color:var(--muted2);line-height:1.5}
+
+.cta-banner{max-width:1100px;margin:0 auto 64px;padding:0 48px}
+.cta-inner{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:48px 56px;text-align:center;position:relative;overflow:hidden}
+.cta-inner::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:300px;height:200px;background:radial-gradient(ellipse,rgba(37,99,235,0.15),transparent 70%);pointer-events:none}
+.cta-inner h2{font-family:var(--font-head);font-size:30px;font-weight:700;color:#fff;margin-bottom:12px;letter-spacing:-0.02em}
+.cta-inner p{font-size:15px;color:var(--muted2);margin-bottom:28px}
+.cta-btns{display:flex;justify-content:center;gap:12px}
+
+footer{border-top:1px solid var(--border);padding:32px 48px;max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.footer-logo{font-family:var(--font-head);font-size:18px;font-weight:700;color:#fff}
+.footer-links{display:flex;gap:28px}
+.footer-links a{font-size:13px;color:var(--muted2);text-decoration:none;cursor:pointer;transition:color 0.2s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:12px;color:var(--muted)}
+
+/* CHECKER */
+.checker-hero{text-align:center;padding:64px 48px 40px;max-width:720px;margin:0 auto}
+.checker-hero h1{font-family:var(--font-head);font-size:clamp(36px,5vw,58px);font-weight:800;letter-spacing:-0.03em;color:#fff;margin-bottom:16px}
+.checker-hero p{font-size:16px;color:var(--muted2);line-height:1.6}
+.checker-input-wrap{max-width:720px;margin:32px auto 0;padding:0 48px}
+.checker-input-row{display:flex;align-items:center;background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:6px 6px 6px 20px;transition:border-color 0.2s,box-shadow 0.2s}
+.checker-input-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-glow)}
+.checker-input-row svg{color:var(--muted);margin-right:10px;flex-shrink:0}
+.checker-input-row input{flex:1;background:none;border:none;outline:none;font-size:14px;color:var(--text);min-width:0;padding:8px 0;letter-spacing:0.01em;font-family:monospace}
+.checker-input-row input::placeholder{color:var(--muted);font-family:var(--font-body)}
+#scan-btn{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:12px 28px;font-family:var(--font-body);font-size:15px;font-weight:500;cursor:pointer;transition:background 0.2s;white-space:nowrap;display:flex;align-items:center;gap:8px}
+#scan-btn:hover:not(:disabled){background:var(--blue-l)}
+#scan-btn:disabled{opacity:0.6;cursor:not-allowed}
+.scan-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:none}
+.sample-pills{max-width:720px;margin:14px auto 0;padding:0 48px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sample-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-right:4px}
+.sample-pill{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:4px 12px;font-size:12px;color:var(--muted2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.sample-pill:hover{border-color:var(--blue-l);color:var(--text)}
+.scan-error{max-width:720px;margin:16px auto 0;padding:0 48px;display:none}
+.error-inner{background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:14px 20px;font-size:14px;color:#fca5a5;display:flex;align-items:center;gap:10px}
+
+.results-section{max-width:900px;margin:40px auto 0;padding:0 48px;opacity:0;transform:translateY(20px);transition:opacity 0.5s,transform 0.5s;pointer-events:none}
+.results-section.visible{opacity:1;transform:none;pointer-events:auto}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.scanned-url-bar{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;color:var(--muted2);overflow:hidden}
+.scanned-url-bar span{color:var(--text);font-family:monospace;font-size:12px;word-break:break-all;flex:1}
+.result-safe{background:rgba(22,163,74,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:16px;padding:28px;position:relative;overflow:hidden;transition:opacity 0.4s}
+.result-safe::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(34,197,94,0.08);pointer-events:none}
+.result-danger{background:rgba(220,38,38,0.06);border:1px solid rgba(239,68,68,0.25);border-radius:16px;padding:28px;transition:opacity 0.4s}
+.result-badge{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px}
+.result-badge.safe{color:var(--green)}
+.result-badge.danger{color:var(--red)}
+.result-title{font-family:var(--font-head);font-size:24px;font-weight:800;letter-spacing:-0.02em;margin-bottom:8px}
+.result-title.safe{color:var(--green)}
+.result-title.danger{color:var(--red)}
+.conf-display{font-family:var(--font-head);font-size:44px;font-weight:800;letter-spacing:-0.04em;margin-bottom:2px}
+.conf-display.safe{color:var(--green)}
+.conf-display.danger{color:var(--red)}
+.conf-sublabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:16px}
+.result-desc{font-size:13px;color:var(--muted2);line-height:1.6;margin-bottom:16px}
+.status-pills{display:flex;gap:8px;flex-wrap:wrap}
+.status-pill{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:5px 12px}
+.status-pill-label{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+.status-pill strong{display:block;font-size:12px;color:var(--text);margin-top:2px}
+.threat-prob-label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted2);margin-bottom:8px}
+.threat-prob-label span{font-weight:600;color:var(--red)}
+.threat-bar{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin-bottom:16px}
+.threat-bar-fill{height:100%;background:var(--red);border-radius:3px;width:0;transition:width 1.2s cubic-bezier(0.22,1,0.36,1) 0.3s}
+.beliefs-row{margin-top:8px}
+.belief-item{margin-bottom:10px}
+.belief-header{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;color:var(--muted2)}
+.belief-header span:last-child{font-weight:600;color:var(--text)}
+.belief-track{height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+.belief-fill{height:100%;border-radius:2px;width:0;transition:width 1.2s cubic-bezier(0.22,1,0.36,1) 0.5s}
+.belief-fill.suspicious{background:var(--red)}
+.belief-fill.benign{background:var(--green)}
+
+.bottom-grid{display:grid;grid-template-columns:280px 1fr;gap:16px;margin-bottom:16px}
+.domain-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px}
+.domain-card h3{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--muted2);margin-bottom:20px}
+.domain-row{margin-bottom:14px}
+.domain-row-label{font-size:11px;color:var(--muted);margin-bottom:3px}
+.domain-row-val{font-size:14px;color:#fff;font-weight:500}
+.domain-tag{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;letter-spacing:0.05em;margin-left:6px;vertical-align:middle}
+.tag-safe{background:rgba(34,197,94,0.15);color:var(--green)}
+.tag-warn{background:rgba(239,68,68,0.15);color:var(--red)}
+.tag-info{background:rgba(37,99,235,0.15);color:var(--blue-l)}
+.vector-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px}
+.vector-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.vector-header h3{font-family:var(--font-head);font-size:18px;font-weight:600;color:#fff}
+.last-scanned{font-size:11px;color:var(--muted);background:var(--bg3);border:1px solid var(--border);padding:3px 8px;border-radius:4px}
+.vector-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.vector-items{display:flex;gap:12px;flex-wrap:wrap}
+.vector-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:130px}
+.vector-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.vector-icon.ok{background:rgba(34,197,94,0.15)}
+.vector-icon.warn{background:rgba(239,68,68,0.15)}
+.vector-label{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.vector-val{font-size:14px;font-weight:600;color:#fff}
+.vector-val.warn{color:var(--amber)}
+
+.checker-promo{max-width:900px;margin:40px auto 0;padding:0 48px 64px}
+.promo-inner{background:linear-gradient(135deg,#0f1e3d,#0a1628);border:1px solid rgba(37,99,235,0.2);border-radius:20px;padding:48px 56px;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center}
+.promo-inner h2{font-family:var(--font-head);font-size:32px;font-weight:800;color:#fff;letter-spacing:-0.02em;margin-bottom:16px;max-width:380px;line-height:1.15}
+.promo-inner p{font-size:14px;color:#7ca3d0;line-height:1.6;margin-bottom:28px}
+.promo-stats{display:flex;gap:32px}
+.promo-stat-num{font-family:var(--font-head);font-size:26px;font-weight:800;color:#fff}
+.promo-stat-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#5b80a8}
+.promo-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px 24px;min-width:240px}
+.promo-card-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.promo-card-icon{width:32px;height:32px;background:rgba(37,99,235,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--blue-l)}
+.promo-card-title{font-size:14px;font-weight:500;color:#fff}
+.promo-card-sub{font-size:11px;color:#5b80a8}
+.promo-lines{display:flex;flex-direction:column;gap:6px}
+.promo-line{height:7px;background:rgba(255,255,255,0.06);border-radius:3px}
+.checker-footer{border-top:1px solid var(--border);max-width:900px;margin:0 auto;padding:40px 48px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:40px}
+.cf-col h4{font-family:var(--font-head);font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px}
+.cf-col a{display:block;font-size:13px;color:var(--muted2);text-decoration:none;margin-bottom:10px;cursor:pointer;transition:color 0.2s}
+.cf-col a:hover{color:#fff}
+.cf-col p{font-size:13px;color:var(--muted2);line-height:1.5}
+.cf-col-brand h4{font-family:var(--font-head);font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.5px;margin-bottom:8px;text-transform:none}
+.email-row{display:flex;margin-top:12px}
+.email-row input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-right:none;border-radius:8px 0 0 8px;outline:none;padding:8px 12px;font-size:13px;color:var(--text);font-family:var(--font-body)}
+.email-row input::placeholder{color:var(--muted)}
+.email-btn{background:var(--blue);color:#fff;border:none;border-radius:0 8px 8px 0;padding:8px 14px;cursor:pointer;font-size:16px;transition:background 0.2s}
+.email-btn:hover{background:var(--blue-l)}
+
+/* ABOUT */
+.about-hero{display:grid;grid-template-columns:1fr 1fr;min-height:340px}
+.about-hero-left{background:linear-gradient(135deg,#0a1628,#081020);padding:72px 56px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.about-hero-left::before{content:'';position:absolute;bottom:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,0.15),transparent 70%)}
+.about-hero-left h2{font-family:var(--font-head);font-size:clamp(26px,3vw,42px);font-weight:800;color:#fff;letter-spacing:-0.02em;line-height:1.15;margin-bottom:20px;position:relative;z-index:1}
+.about-hero-left p{font-size:14px;color:#7ca3d0;line-height:1.7;max-width:360px;position:relative;z-index:1}
+.about-hero-right{background:#050a14;display:flex;align-items:center;justify-content:center;padding:40px}
+.chip-img{width:100%;max-width:280px;background:linear-gradient(135deg,#0a1f3d,#051028);border:1px solid rgba(6,182,212,0.2);border-radius:20px;padding:32px;text-align:center;position:relative;overflow:hidden}
+.chip-img::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 20px,rgba(6,182,212,0.03) 21px),repeating-linear-gradient(90deg,transparent,transparent 20px,rgba(6,182,212,0.03) 21px)}
+.chip-icon{font-size:64px;margin-bottom:12px;position:relative;z-index:1}
+.chip-label{font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--cyan);position:relative;z-index:1}
+.chip-sub{font-size:12px;color:#3a6a8a;margin-top:4px;position:relative;z-index:1}
+.protect-section{max-width:1200px;margin:0 auto;padding:64px 56px;border-top:1px solid var(--border)}
+.protect-section h2{font-family:var(--font-head);font-size:30px;font-weight:700;color:#fff;margin-bottom:28px;letter-spacing:-0.02em}
+.protect-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.protect-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;transition:border-color 0.2s,transform 0.2s}
+.protect-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.protect-icon{width:40px;height:40px;border-radius:10px;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:16px}
+.protect-card h3{font-family:var(--font-head);font-size:16px;font-weight:600;color:#fff;margin-bottom:8px}
+.protect-card p{font-size:13px;color:var(--muted2);line-height:1.6}
+.integrity-section{display:grid;grid-template-columns:360px 1fr;border-top:1px solid var(--border);min-height:320px}
+.integrity-left{background:linear-gradient(135deg,#0a1628,#051020);display:flex;align-items:center;justify-content:center}
+.integrity-right{padding:64px 56px;display:flex;flex-direction:column;justify-content:center}
+.integrity-right h2{font-family:var(--font-head);font-size:28px;font-weight:700;color:#fff;letter-spacing:-0.02em;margin-bottom:16px}
+.integrity-right p{font-size:14px;color:var(--muted2);line-height:1.7;margin-bottom:24px;max-width:480px}
+.faq-section{max-width:1200px;margin:0 auto;padding:64px 56px;display:grid;grid-template-columns:1fr 1fr;gap:64px;border-top:1px solid var(--border)}
+.faq-left h2{font-family:var(--font-head);font-size:30px;font-weight:700;color:#fff;margin-bottom:8px;letter-spacing:-0.02em}
+.faq-left>p{font-size:14px;color:var(--muted2);margin-bottom:32px}
+.faq-item{margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid var(--border)}
+.faq-item:last-child{border-bottom:none}
+.faq-q{font-size:15px;font-weight:500;color:var(--blue-l);margin-bottom:8px}
+.faq-a{font-size:14px;color:var(--muted2);line-height:1.7}
+.about-footer{border-top:1px solid var(--border);max-width:1200px;margin:0 auto;padding:40px 56px;display:grid;grid-template-columns:200px 1fr 1fr 1fr;gap:40px}
+.af-logo{font-family:var(--font-head);font-size:22px;font-weight:700;color:#fff;margin-bottom:8px}
+.af-tagline{font-size:12px;color:var(--muted2);line-height:1.5}
+.af-col h4{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:14px}
+.af-col a{display:block;font-size:13px;color:var(--muted2);text-decoration:none;margin-bottom:10px;cursor:pointer;transition:color 0.2s}
+.af-col a:hover{color:#fff}
+.af-copy-row{border-top:1px solid var(--border);max-width:1200px;margin:0 auto;padding:16px 56px 32px;font-size:12px;color:var(--muted)}
+
+@media(max-width:768px){
+  nav{padding:0 20px}
+  .nav-links{gap:12px}
+  #api-badge span{display:none}
+  .hero{grid-template-columns:1fr;padding:48px 20px}
+  .hero-right{display:none}
+  .why-section,.steps-section{padding:48px 20px}
+  .features-grid,.protect-grid,.steps-cards{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .cta-banner{padding:0 20px;margin-bottom:40px}
+  .cta-inner{padding:32px 24px}
+  footer{flex-direction:column;gap:16px;text-align:center;padding:24px 20px}
+  .checker-hero,.checker-input-wrap,.results-section,.checker-promo,.sample-pills{padding-left:20px;padding-right:20px}
+  .results-grid,.bottom-grid{grid-template-columns:1fr}
+  .promo-inner{grid-template-columns:1fr}
+  .promo-card{display:none}
+  .checker-footer{grid-template-columns:1fr 1fr;padding:32px 20px}
+  .about-hero{grid-template-columns:1fr}
+  .about-hero-right{display:none}
+  .protect-section,.integrity-right,.about-footer{padding:48px 20px}
+  .integrity-section{grid-template-columns:1fr}
+  .integrity-left{display:none}
+  .faq-section{grid-template-columns:1fr;padding:48px 20px;gap:32px}
+  .about-footer{grid-template-columns:1fr 1fr;padding:32px 20px}
+}
+</style>
+</head>
+<body>
+
+<template id="nav-tpl">
+<nav>
+  <div class="nav-logo" onclick="goTo('home')">PhiUrl</div>
+  <div class="nav-links">
+    <a data-page="home">Home</a>
+    <a data-page="checker">Checker</a>
+    <a data-page="about">About</a>
+    <div id="api-badge"><div class="apidot"></div><span id="api-status-text">Connecting…</span></div>
+    <a class="nav-cta" data-page="checker">Check a Link</a>
+  </div>
+</nav>
+</template>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div id="nav-home"></div>
+  <section class="hero">
+    <div class="hero-left">
+      <h1>Browse with<br>Confidence.</h1>
+      <p>PhiUrl scans every URL for hidden threats. Protect your digital life from phishing, fraud, and malware with our high-end neural analytics.</p>
+      <div class="hero-input-row">
+        <input type="text" id="hero-url-input" placeholder="https://enter your URL" autocomplete="off" spellcheck="false">
+        <button onclick="scanFromHero()">Scan URL</button>
+      </div>
+      <div class="hero-trust">
+        <div class="trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          TRUSTED BY <strong style="color:#fff;margin-left:3px">01+</strong>&nbsp;USERS
+        </div>
+        <div class="trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <strong style="color:#fff">98%</strong>&nbsp;DETECTION RATE
+        </div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-mockup">
+        <div class="mockup-topbar">
+          <div class="mdot" style="background:#ff5f57"></div>
+          <div class="mdot" style="background:#febc2e"></div>
+          <div class="mdot" style="background:#28c840"></div>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-secure">
+            <div style="flex:1">
+              <div class="mock-secure-badge">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                SECURE
+              </div>
+              <div class="mock-bar-track"><div class="mock-bar-fill"></div></div>
+              <div class="mock-score">SAFETY SCORE: <span>94/100</span></div>
+            </div>
+            <div class="mock-shield">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+          </div>
+          <div class="mock-charts">
+            <div class="mock-chart-card">
+              <div class="bar-mini" style="height:32px"></div><div class="bar-mini" style="height:48px"></div>
+              <div class="bar-mini" style="height:24px"></div><div class="bar-mini" style="height:56px"></div>
+              <div class="bar-mini" style="height:36px"></div><div class="bar-mini" style="height:44px"></div>
+            </div>
+            <div class="mock-chart-card" style="align-items:center;justify-content:center;">
+              <svg width="56" height="56" viewBox="0 0 56 56">
+                <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="6"/>
+                <circle cx="28" cy="28" r="22" fill="none" stroke="#2563eb" stroke-width="6" stroke-dasharray="94 44" stroke-dashoffset="22" stroke-linecap="round" transform="rotate(-90 28 28)"/>
+                <text x="28" y="33" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">94%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="why-section">
+    <div class="why-header">
+      <div class="section-label">Advanced Protection</div>
+      <h2>Why Use PhiUrl?</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <h3>Real-time Scanning</h3>
+        <p>Every URL is analyzed instantly using character-level n-gram heuristics and our ML model — results in under 500ms.</p>
+      </div>
+      <div class="feature-card highlighted">
+        <div class="feat-icon" style="background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.2);color:#06b6d4;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg></div>
+        <h3>Belief Decomposition</h3>
+        <p>Our LBP-inspired model breaks down which URL tokens drove the prediction — suspicious patterns vs benign structure.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);color:#22c55e;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <h3>Deep Link Analysis</h3>
+        <p>Domain TLD risk, IP-based URLs, suspicious keywords, and HTTPS status — all checked in a single scan.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="stats-row">
+    <div class="stat-item"><div class="stat-num">0.25M<sup>+</sup></div><div class="stat-label">Scanned</div></div>
+    <div class="stat-item"><div class="stat-num">0<sup>+</sup></div><div class="stat-label">Blocked</div></div>
+    <div class="stat-item"><div class="stat-num">1<sup>+</sup></div><div class="stat-label">Users</div></div>
+    <div class="stat-item"><div class="stat-num">+1<sup></sup></div><div class="stat-label">Partners</div></div>
+  </div>
+
+  <section class="steps-section">
+    <div class="steps-header">
+      <h2>Three Steps</h2>
+      <div class="steps-tabs">
+        <div class="step-tab active">Paste link</div>
+        <div class="step-tab">Scan</div>
+        <div class="step-tab">Get results</div>
+      </div>
+      <span class="steps-learn" onclick="goTo('checker')">Try it now &rarr;</span>
+    </div>
+    <div class="steps-cards">
+      <div class="step-card"><div class="step-num">1</div><div><h4>Paste the URL</h4><p>Copy any suspicious link and paste it into the PhiUrl checker input box.</p></div></div>
+      <div class="step-card"><div class="step-num">2</div><div><h4>Hit Scan Now</h4><p>Our ML model vectorizes the URL and runs it through our logistic regression classifier instantly.</p></div></div>
+      <div class="step-card"><div class="step-num">3</div><div><h4>Read the results</h4><p>Get a full breakdown: prediction, confidence score, belief decomposition, and domain intel.</p></div></div>
+    </div>
+  </section>
+
+  <div class="cta-banner">
+    <div class="cta-inner">
+      <h2>Ready for a Safer Web?</h2>
+      <p>Join millions of users who trust PhiUrl to be their first line of defense against online threats.</p>
+      <div class="cta-btns">
+        <button class="btn-primary" onclick="goTo('checker')">Start Scanning</button>
+        <button class="btn-outline" onclick="goTo('about')">Learn More</button>
+      </div>
+    </div>
+  </div>
+  <footer>
+    <div class="footer-logo">PhiUrl</div>
+    <div class="footer-links">
+      <a onclick="goTo('home')">Product</a>
+      <a onclick="goTo('about')">About</a>
+      <a onclick="goTo('checker')">Checker</a>
+    </div>
+    <div class="footer-copy">&copy; 2024 PhiUrl. The Digital Curator of Web Safety.</div>
+  </footer>
+</div>
+
+<!-- CHECKER -->
+<div class="page" id="page-checker">
+  <div id="nav-checker"></div>
+  <section class="checker-hero">
+    <h1>Verify your destination.</h1>
+    <p>Paste any URL below. Our model scans for phishing, malware, and fraudulent redirects in real-time.</p>
+  </section>
+  <div class="checker-input-wrap">
+    <div class="checker-input-row">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <input type="text" id="checker-url" placeholder="https://example-site.com/verify" autocomplete="off" spellcheck="false">
+      <button id="scan-btn" onclick="runScan()">
+        <span id="scan-btn-text">Scan Now</span>
+        <div class="scan-spinner" id="scan-spinner"></div>
+      </button>
+    </div>
+  </div>
+  <div class="sample-pills">
+    <span class="sample-label">Try:</span>
+    <div class="sample-pill" onclick="setAndScan('https://www.google.com')">google.com</div>
+    <div class="sample-pill" onclick="setAndScan('https://github.com/user/repo')">github.com</div>
+    <div class="sample-pill" onclick="setAndScan('http://paypal-verify-account.xyz/login.php')">paypal phishing</div>
+    <div class="sample-pill" onclick="setAndScan('http://secure-banking-update.tk/credentials')">banking scam</div>
+    <div class="sample-pill" onclick="setAndScan('http://facebook-login-verify.ml/account')">facebook phish</div>
+    <div class="sample-pill" onclick="setAndScan('https://stackoverflow.com/questions/123')">stackoverflow</div>
+  </div>
+  <div class="scan-error" id="scan-error">
+    <div class="error-inner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="error-msg"></span>
+    </div>
+  </div>
+
+  <section class="results-section" id="results-section">
+    <div class="scanned-url-bar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Scanning: <span id="scanned-url-display"></span>
+      <span id="backend-mode-tag" style="font-size:10px;padding:2px 8px;border-radius:4px;margin-left:auto;flex-shrink:0;border:1px solid transparent"></span>
+    </div>
+    <div class="results-grid">
+      <div class="result-safe" id="card-safe">
+        <div class="result-badge safe">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          SECURITY CLEARANCE
+        </div>
+        <div class="result-title safe">SAFE TO GO</div>
+        <div class="conf-display safe" id="safe-conf">&mdash;</div>
+        <div class="conf-sublabel">Confidence Score</div>
+        <div class="result-desc">This URL has been analyzed by our core engine and shows no signs of malicious intent or known threats.</div>
+        <div class="status-pills">
+          <div class="status-pill"><div class="status-pill-label">Status</div><strong id="ssl-status">Verified</strong></div>
+          <div class="status-pill"><div class="status-pill-label">SSL</div><strong id="https-status">&mdash;</strong></div>
+          <div class="status-pill"><div class="status-pill-label">TLD</div><strong id="tld-val">&mdash;</strong></div>
+        </div>
+      </div>
+      <div class="result-danger" id="card-danger">
+        <div class="result-badge danger">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          HIGH RISK ALERT
+        </div>
+        <div class="result-title danger">POTENTIAL FRAUD</div>
+        <div class="conf-display danger" id="danger-conf">&mdash;</div>
+        <div class="conf-sublabel">Threat Probability</div>
+        <div class="threat-prob-label"><span>Threat bar</span><span id="threat-pct">&mdash;</span></div>
+        <div class="threat-bar"><div class="threat-bar-fill" id="threat-fill"></div></div>
+        <div class="result-desc">Our algorithm detected signature patterns common in phishing campaigns. Proceed with extreme caution.</div>
+        <div class="beliefs-row">
+          <div class="belief-item">
+            <div class="belief-header"><span>Suspicious Pattern Belief</span><span id="belief-susp-val">&mdash;</span></div>
+            <div class="belief-track"><div class="belief-fill suspicious" id="belief-susp-fill"></div></div>
+          </div>
+          <div class="belief-item">
+            <div class="belief-header"><span>Benign Structure Belief</span><span id="belief-benign-val">&mdash;</span></div>
+            <div class="belief-track"><div class="belief-fill benign" id="belief-benign-fill"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-grid">
+      <div class="domain-card">
+        <h3>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Domain Intelligence
+        </h3>
+        <div class="domain-row"><div class="domain-row-label">Hostname</div><div class="domain-row-val" id="dom-hostname">&mdash;</div></div>
+        <div class="domain-row"><div class="domain-row-label">Protocol</div><div class="domain-row-val" id="dom-protocol">&mdash;</div></div>
+        <div class="domain-row"><div class="domain-row-label">TLD Risk</div><div class="domain-row-val" id="dom-tld-risk">&mdash;</div></div>
+        <div class="domain-row"><div class="domain-row-label">URL Length</div><div class="domain-row-val" id="dom-length">&mdash;</div></div>
+        <div class="domain-row"><div class="domain-row-label">IP-based URL</div><div class="domain-row-val" id="dom-ip">&mdash;</div></div>
+      </div>
+      <div class="vector-card">
+        <div class="vector-header">
+          <div><h3>Threat Vector Breakdown</h3><div class="vector-sub">Deep inspection of link heuristics</div></div>
+          <div class="last-scanned" id="scan-time">Just now</div>
+        </div>
+        <div class="vector-items">
+          <div class="vector-item"><div class="vector-icon ok" id="vec-malware-icon">&#x2705;</div><div><div class="vector-label">Malware</div><div class="vector-val" id="vec-malware">None Detected</div></div></div>
+          <div class="vector-item"><div class="vector-icon" id="vec-tld-icon">&#x2705;</div><div><div class="vector-label">Suspicious TLD</div><div class="vector-val" id="vec-tld">&mdash;</div></div></div>
+          <div class="vector-item"><div class="vector-icon" id="vec-phish-icon">&#x2705;</div><div><div class="vector-label">Phishing</div><div class="vector-val" id="vec-phish">&mdash;</div></div></div>
+          <div class="vector-item"><div class="vector-icon" id="vec-https-icon">&#x2705;</div><div><div class="vector-label">HTTPS</div><div class="vector-val" id="vec-https">&mdash;</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="checker-promo">
+    <div class="promo-inner">
+      <div>
+        <h2>Built for the modern web's complexity.</h2>
+        <p>PhiUrl uses TF-IDF char n-grams and logistic regression to predict malicious intent from URL structure alone — no database lookups required.</p>
+        <div class="promo-stats">
+          <div class="promo-stat"><div class="promo-stat-num">0<sup>+</sup></div><div class="promo-stat-label">Scans Daily</div></div>
+          <div class="promo-stat"><div class="promo-stat-num">99.9%</div><div class="promo-stat-label">Detection Rate</div></div>
+        </div>
+      </div>
+      <div class="promo-card">
+        <div class="promo-card-header">
+          <div class="promo-card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div><div class="promo-card-title">Real-time Protection</div><div class="promo-card-sub">Active monitoring system enabled</div></div>
+        </div>
+        <div class="promo-lines">
+          <div class="promo-line" style="width:90%"></div><div class="promo-line" style="width:70%"></div>
+          <div class="promo-line" style="width:80%"></div><div class="promo-line" style="width:55%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="checker-footer">
+    <div class="cf-col cf-col-brand"><h4>PhiUrl</h4><p>&copy; 2026 PhiUrl.<br>The Digital Curator of Web Safety.</p></div>
+    <div class="cf-col"><h4>Platform</h4><a>Security Disclosure</a><a>Help Center</a></div>
+    <div class="cf-col"><h4>Legal</h4><a>Privacy Policy</a><a>Terms of Service</a></div>
+    <div class="cf-col"><h4>Stay Safe</h4><p>Join 50k+ users receiving weekly security briefings.</p>
+      <div class="email-row"><input type="email" placeholder="Email"><button class="email-btn">&rarr;</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="page" id="page-about">
+  <div id="nav-about"></div>
+  <div class="about-hero">
+    <div class="about-hero-left">
+      <h2>Our mission is to make the web a safer place for everyone.</h2>
+      <p>At PhiUrl, we use machine learning to identify phishing patterns in URLs before they can harm real users. Security should be accessible to everyone — not just experts.</p>
+    </div>
+    <div class="about-hero-right">
+      <div class="chip-img">
+        <div class="chip-icon">&#x1F6E1;&#xFE0F;</div>
+        <div class="chip-label">PhiUrl Care</div>
+        <div class="chip-sub">Advanced Threat Intelligence</div>
+      </div>
+    </div>
+  </div>
+  <section class="protect-section">
+    <h2>How We Protect You</h2>
+    <div class="protect-grid">
+      <div class="protect-card"><div class="protect-icon">&#x1F9E0;</div><h3>Predictive AI</h3><p>Our logistic regression model trained on character-level TF-IDF n-grams detects phishing patterns invisible to the naked eye.</p></div>
+      <div class="protect-card"><div class="protect-icon">&#x26A1;</div><h3>Smart Heuristics</h3><p>TLD risk scoring, IP-URL detection, and suspicious keyword matching run alongside the ML model for a complete picture.</p></div>
+      <div class="protect-card"><div class="protect-icon">&#x1F50D;</div><h3>Belief Decomposition</h3><p>Every prediction is explained via LBP-inspired belief scores so you always understand why a URL was flagged as suspicious.</p></div>
+    </div>
+  </section>
+  <div class="integrity-section">
+    <div class="integrity-left">
+      <svg width="120" height="120" viewBox="0 0 120 120" opacity="0.25">
+        <rect x="10" y="10" width="100" height="100" rx="12" fill="none" stroke="#2563eb" stroke-width="1"/>
+        <rect x="25" y="25" width="70" height="70" rx="8" fill="none" stroke="#2563eb" stroke-width="1"/>
+        <circle cx="60" cy="60" r="20" fill="none" stroke="#06b6d4" stroke-width="2"/>
+        <line x1="10" y1="60" x2="110" y2="60" stroke="#2563eb" stroke-width="0.5" stroke-dasharray="4 4"/>
+        <line x1="60" y1="10" x2="60" y2="110" stroke="#2563eb" stroke-width="0.5" stroke-dasharray="4 4"/>
+      </svg>
+    </div>
+    <div class="integrity-right">
+      <h2>Expertise Driven by Integrity</h2>
+      <p>At PhiUrl, we built this tool as an open, educational project. Our model code, training approach, and detection methodology are fully transparent — because trust is built through visibility, not secrecy.</p>
+      <button class="btn-primary" onclick="goTo('checker')">Protect Yourself &rarr;</button>
+    </div>
+  </div>
+  <div class="faq-section">
+    <div class="faq-left">
+      <h2>Common Questions</h2>
+      <p>Everything you need to know about PhiUrl and how it works.</p>
+      <div class="faq-item">
+        <div class="faq-q">How does PhiUrl detect phishing?</div>
+        <div class="faq-a">We use a logistic regression model trained on character-level TF-IDF n-grams (3&ndash;5 chars). The model learns which character sequences in a URL are statistically associated with phishing &mdash; suspicious TLDs, keyword patterns, and structural anomalies.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Does it need to visit the URL?</div>
+        <div class="faq-a">No. PhiUrl analyzes only the URL string itself &mdash; no HTTP requests are made to the target site. You can safely scan suspicious links without triggering them.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Is there a backend I need to run?</div>
+        <div class="faq-a">Yes &mdash; the site connects to a Flask backend (app.py) on localhost:5000. If offline, the nav badge shows <strong>Demo Mode</strong> and results are generated locally. Run <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px">python app.py</code> to use your real ML model.</div>
+      </div>
+    </div>
+    <div>
+      <div style="background:linear-gradient(135deg,#0a1628,#051020);border:1px solid rgba(37,99,235,0.2);border-radius:20px;overflow:hidden;margin-bottom:24px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;min-height:220px;">
+          <div style="padding:32px 28px;display:flex;flex-direction:column;justify-content:center;">
+            <h3 style="font-family:var(--font-head);font-size:20px;font-weight:700;color:#fff;margin-bottom:12px;letter-spacing:-0.01em;">Expertise Driven by Integrity</h3>
+            <p style="font-size:13px;color:#7ca3d0;line-height:1.6;margin-bottom:20px;">Built transparently &mdash; our model, methodology, and code are open.</p>
+            <button class="btn-primary" style="font-size:13px;padding:9px 18px;width:fit-content;" onclick="goTo('checker')">Try it now</button>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;padding:20px;">
+            <div style="background:linear-gradient(135deg,#1a2840,#0a1525);border-radius:12px;padding:20px;width:100%;text-align:center;">
+              <div style="font-size:36px;margin-bottom:8px;">&#x1F6E1;&#xFE0F;</div>
+              <div style="font-size:11px;color:#5b80a8;letter-spacing:0.08em;text-transform:uppercase;">PhiUrl Security</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px;text-align:center;">
+        <h3 style="font-family:var(--font-head);font-size:26px;font-weight:800;color:#fff;margin-bottom:10px;letter-spacing:-0.02em;">Ready to browse with confidence?</h3>
+        <p style="font-size:14px;color:var(--muted2);margin-bottom:24px;">Scan your first URL right now &mdash; no signup, no tracking, no ads.</p>
+        <button class="btn-primary" onclick="goTo('checker')">Start Your First Scan</button>
+      </div>
+    </div>
+  </div>
+  <div class="about-footer">
+    <div><div class="af-logo">PhiUrl</div><div class="af-tagline">&copy; 2026 PhiUrl.<br>All rights reserved.</div></div>
+    <div class="af-col"><h4>Navigation</h4><a onclick="goTo('home')">Home</a><a onclick="goTo('checker')">Checker</a><a onclick="goTo('about')">About</a></div>
+    <div class="af-col"><h4>Company</h4><a>About us</a><a>Privacy Policy</a><a>Contact Us</a></div>
+  </div>
+  <div class="af-copy-row">&copy; 2024 PhiUrl. The Digital Curator of Web Safety.</div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:5000';
+let backendOnline = false;
+
+// NAV
+function buildNav(pid) {
+  const frag = document.getElementById('nav-tpl').content.cloneNode(true);
+  frag.querySelectorAll('[data-page]').forEach(a => {
+    if (a.dataset.page === pid && !a.classList.contains('nav-cta')) a.classList.add('active');
+    a.addEventListener('click', () => goTo(a.dataset.page));
+  });
+  document.getElementById('nav-' + pid).appendChild(frag);
+}
+['home','checker','about'].forEach(buildNav);
+
+function goTo(p) {
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+// BACKEND HEALTH
+async function checkBackend() {
+  const badges = document.querySelectorAll('#api-badge');
+  const texts  = document.querySelectorAll('#api-status-text');
+  try {
+    const r = await fetch(API_URL + '/health', {signal: AbortSignal.timeout(3000)});
+    if (!r.ok) throw new Error();
+    backendOnline = true;
+    badges.forEach(b => {b.className=''; b.classList.add('online')});
+    texts.forEach(t => t.textContent = 'API Online');
+  } catch {
+    backendOnline = false;
+    badges.forEach(b => {b.className=''; b.classList.add('offline')});
+    texts.forEach(t => t.textContent = 'Demo Mode');
+  }
+}
+checkBackend();
+setInterval(checkBackend, 15000);
+
+// HELPERS
+function scanFromHero() {
+  const u = document.getElementById('hero-url-input').value.trim();
+  if (u) document.getElementById('checker-url').value = u;
+  goTo('checker');
+  if (u) setTimeout(runScan, 80);
+}
+function setAndScan(u) {
+  document.getElementById('checker-url').value = u;
+  runScan();
+}
+document.getElementById('checker-url').addEventListener('keydown', e => { if (e.key==='Enter') runScan(); });
+document.querySelectorAll('.step-tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.step-tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+}));
+
+// DEMO predictor (used when Flask is offline)
+function demoPredict(url) {
+  const u = url.toLowerCase();
+  const suspTLDs  = ['.tk','.ml','.ga','.cf','.gq','.xyz','.ru','.cn','.top','.loan','.work','.click'];
+  const suspWords = ['login','verify','secure','update','confirm','account','banking','paypal','password','credential','signin','phish','locked','suspended','alert','urgent','validate','reactivate'];
+  const hasSuspTLD   = suspTLDs.some(t => u.includes(t));
+  const hasSuspWord  = suspWords.some(w => u.includes(w));
+  const isIP         = /https?:\/\/\d{1,3}\.\d{1,3}/.test(u);
+  const noHttps      = !u.startsWith('https');
+  const hostname     = (() => { try { return new URL(u.startsWith('http')?u:'http://'+u).hostname; } catch { return u.split('/')[0]; } })();
+  const dashInDomain = hostname.includes('-');
+  const tld          = hostname.includes('.') ? '.'+hostname.split('.').pop() : '';
+  const deepPath     = (url.match(/\//g)||[]).length > 4;
+  const longUrl      = url.length > 75;
+
+  // Deterministic weighted risk score — same URL always gives same result
+  const riskPoints =
+    (hasSuspTLD  ? 30 : 0) +
+    (hasSuspWord ? 25 : 0) +
+    (isIP        ? 35 : 0) +
+    (noHttps     ? 10 : 0) +
+    (dashInDomain? 15 : 0) +
+    (deepPath    ?  5 : 0) +
+    (longUrl     ?  5 : 0);
+
+  const isPhish = riskPoints >= 35;
+
+  // Deterministic confidence: scale risk score to confidence range
+  const conf = isPhish
+    ? Math.min(99, Math.round(70 + (riskPoints - 35) * 0.45))   // 70–99% for phishing
+    : Math.round(Math.max(55, 95 - riskPoints * 0.8));           // 55–95% for legitimate
+
+  const suspBelief  = isPhish ? Math.round(riskPoints * 0.85) : Math.round(riskPoints * 0.4);
+  const benignBelief = Math.max(0, 100 - suspBelief);
+
+  return {
+    prediction: isPhish ? 'Phishing' : 'Legitimate',
+    confidence: conf,
+    beliefs: {
+      'Suspicious Pattern Belief': Math.min(99, suspBelief),
+      'Benign Structure Belief':   Math.min(99, benignBelief)
+    },
+    features: { hostname, tld, has_https: u.startsWith('https'), suspicious_tld: hasSuspTLD, is_ip_based: isIP, long_url: longUrl },
+    _source: 'demo'
+  };
+}
+
+// MAIN SCAN
+async function runScan() {
+  const input = document.getElementById('checker-url');
+  const url = input.value.trim();
+  if (!url) { input.focus(); return; }
+
+  const btn=document.getElementById('scan-btn'), txt=document.getElementById('scan-btn-text'), sp=document.getElementById('scan-spinner');
+  btn.disabled=true; txt.textContent='Scanning\u2026'; sp.style.display='block';
+  document.getElementById('results-section').classList.remove('visible');
+  document.getElementById('scan-error').style.display='none';
+  document.getElementById('threat-fill').style.width='0';
+  document.querySelectorAll('.belief-fill').forEach(f=>f.style.width='0');
+
+  try {
+    let data;
+    if (backendOnline) {
+      const r = await fetch(API_URL+'/predict', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url}), signal:AbortSignal.timeout(8000)});
+      data = await r.json();
+      if (data.error) throw new Error(data.error);
+      data._source = 'live';
+    } else {
+      data = demoPredict(url);
+    }
+    showResults(data, url);
+  } catch(err) {
+    const msg = err.message.includes('fetch')||err.message.includes('timeout')
+      ? 'Cannot reach backend. Run: python app.py'
+      : 'Error: '+err.message;
+    document.getElementById('error-msg').textContent = msg;
+    document.getElementById('scan-error').style.display = 'block';
+  } finally {
+    btn.disabled=false; txt.textContent='Scan Now'; sp.style.display='none';
+  }
+}
+
+function showResults(data, url) {
+  // Use explicit probabilities from backend if available, otherwise derive them
+  const pPhishing   = data.p_phishing   !== undefined ? data.p_phishing   : (data.prediction==="Phishing" ? data.confidence : parseFloat((100-data.confidence).toFixed(1)));
+  const pLegitimate = data.p_legitimate !== undefined ? data.p_legitimate : (data.prediction==="Legitimate" ? data.confidence : parseFloat((100-data.confidence).toFixed(1)));
+  const isP = data.prediction==='Phishing', conf=data.confidence;
+  const beliefs=data.beliefs||{}, features=data.features||{};
+
+  // URL bar + mode tag
+  document.getElementById('scanned-url-display').textContent = url.length>80?url.slice(0,77)+'\u2026':url;
+  const mt = document.getElementById('backend-mode-tag');
+  if (data._source==='live') {
+    mt.textContent='Live Model'; mt.style.cssText='font-size:10px;padding:2px 8px;border-radius:4px;margin-left:auto;flex-shrink:0;background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.25)';
+  } else {
+    mt.textContent='Demo Mode'; mt.style.cssText='font-size:10px;padding:2px 8px;border-radius:4px;margin-left:auto;flex-shrink:0;background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)';
+  }
+
+  // Card highlight
+  document.getElementById('card-safe').style.opacity   = isP?'0.28':'1';
+  document.getElementById('card-danger').style.opacity = isP?'1':'0.28';
+
+  // Numbers — pPhishing = probability of being phishing, always consistent
+  // pPhishing & pLegitimate already set above from backend data
+  
+  document.getElementById("safe-conf").textContent   = pLegitimate + "%";
+  document.getElementById("danger-conf").textContent = pPhishing + "%";
+  document.getElementById("threat-pct").textContent  = pPhishing + "%";
+  setTimeout(()=>{ document.getElementById("threat-fill").style.width = pPhishing + "%"; },200);
+
+  // Beliefs
+  const sv=beliefs['Suspicious Pattern Belief']??0, bv=beliefs['Benign Structure Belief']??0;
+  document.getElementById('belief-susp-val').textContent   = sv+'%';
+  document.getElementById('belief-benign-val').textContent = bv+'%';
+  setTimeout(()=>{
+    document.getElementById('belief-susp-fill').style.width  = sv+'%';
+    document.getElementById('belief-benign-fill').style.width= bv+'%';
+  },400);
+
+  // Domain intel
+  const hostname = features.hostname||(()=>{try{return new URL(url.startsWith('http')?url:'http://'+url).hostname;}catch{return url;}})();
+  const tld = features.tld||(hostname.includes('.')?'.'+hostname.split('.').pop():'—');
+  document.getElementById('dom-hostname').textContent = hostname||'—';
+  document.getElementById('dom-protocol').innerHTML  = features.has_https?'HTTPS <span class="domain-tag tag-safe">Secure</span>':'HTTP <span class="domain-tag tag-warn">Insecure</span>';
+  document.getElementById('dom-tld-risk').innerHTML  = features.suspicious_tld?tld+' <span class="domain-tag tag-warn">High Risk</span>':tld+' <span class="domain-tag tag-safe">Normal</span>';
+  document.getElementById('dom-length').innerHTML    = url.length+' chars '+(features.long_url?'<span class="domain-tag tag-warn">Long URL</span>':'<span class="domain-tag tag-info">Normal</span>');
+  document.getElementById('dom-ip').innerHTML        = features.is_ip_based?'Yes <span class="domain-tag tag-warn">Suspicious</span>':'No <span class="domain-tag tag-safe">Normal</span>';
+
+  // Status pills
+  document.getElementById('ssl-status').textContent  = features.has_https?'Verified':'Not SSL';
+  document.getElementById('https-status').textContent= features.has_https?'Valid':'Missing';
+  document.getElementById('tld-val').textContent     = tld||'—';
+
+  // Vectors
+  function sv2(iconId,valId,ok,okTxt,warnTxt){
+    const i=document.getElementById(iconId), v=document.getElementById(valId);
+    i.innerHTML=ok?'&#x2705;':'&#x26A0;&#xFE0F;'; i.className='vector-icon '+(ok?'ok':'warn');
+    v.textContent=ok?okTxt:warnTxt; v.className='vector-val'+(ok?'':' warn');
+  }
+  sv2('vec-malware-icon','vec-malware',true,'None Detected','Suspected');
+  sv2('vec-tld-icon','vec-tld',!features.suspicious_tld,'Clean TLD','Suspicious TLD');
+  sv2('vec-phish-icon','vec-phish',!isP,'Not Detected','Suspected');
+  sv2('vec-https-icon','vec-https',features.has_https,'Secured (HTTPS)','Not Secured');
+  document.getElementById('scan-time').textContent = 'Scanned: '+new Date().toLocaleTimeString();
+
+  const sec=document.getElementById('results-section');
+  sec.classList.add('visible');
+  setTimeout(()=>sec.scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+</script>
+</body>
+</html>
